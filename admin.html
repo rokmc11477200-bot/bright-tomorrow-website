@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>밝은내일 웹 - 관리자 대시보드</title>
+    <meta name="description" content="밝은내일 웹 관리자 대시보드 - 견적 관리, 고객 관리, 프로젝트 관리">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+    
+                                         <!-- Admin Styles -->
+                 <link rel="stylesheet" href="admin.css?v=1.7">
+    
+    <!-- System Fonts Only - No External Dependencies -->
+    <style>
+        * {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+        }
+    </style>
+    
+    <!-- Chart.js - Local Fallback -->
+    <script>
+        // Chart.js fallback if CDN fails
+        if (typeof Chart === 'undefined') {
+            console.warn('Chart.js CDN failed, using fallback');
+            // Simple chart fallback implementation
+            window.Chart = {
+                register: function() {},
+                getChart: function() { return { destroy: function() {}, update: function() {} }; }
+            };
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" onerror="console.warn('Chart.js CDN failed')"></script>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <p>관리자 대시보드 로딩 중...</p>
+    </div>
+
+    <!-- Admin Header -->
+    <header class="admin-header">
+        <div class="header-content">
+            <div class="header-left">
+                <h1 class="admin-title">🌅 밝은내일 웹 관리자</h1>
+                <span class="admin-subtitle">웹사이트 제작 관리 시스템</span>
+            </div>
+            <div class="header-right">
+                <div class="admin-info">
+                    <span class="admin-name">관리자</span>
+                    <span class="admin-status online">온라인</span>
+                </div>
+                <button class="btn btn-outline" onclick="logout()">로그아웃</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Admin Navigation -->
+    <nav class="admin-nav">
+        <div class="nav-content">
+            <ul class="nav-list">
+                <li><button class="nav-btn active" data-tab="dashboard">📊 대시보드</button></li>
+                <li><button class="nav-btn" data-tab="quotes">📋 견적 관리</button></li>
+                <li><button class="nav-btn" data-tab="customers">👥 고객 관리</button></li>
+                <li><button class="nav-btn" data-tab="projects">🚀 프로젝트 관리</button></li>
+                <li><button class="nav-btn" data-tab="portfolio">🎨 포트폴리오 관리</button></li>
+                <li><button class="nav-btn" data-tab="analytics">📈 통계 분석</button></li>
+                <li><button class="nav-btn" data-tab="settings">⚙️ 설정</button></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="admin-main">
+        <!-- Dashboard Tab -->
+        <div class="tab-content active" id="dashboard">
+            <div class="dashboard-header">
+                <h2>📊 대시보드</h2>
+                <p>오늘의 현황과 주요 지표를 확인하세요</p>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📋</div>
+                    <div class="stat-content">
+                        <h3 class="stat-number" id="totalQuotes">0</h3>
+                        <p class="stat-label">총 견적 요청</p>
+                        <span class="stat-change positive">+12% 이번 주</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-content">
+                        <h3 class="stat-number" id="totalCustomers">0</h3>
+                        <p class="stat-label">총 고객 수</p>
+                        <span class="stat-change positive">+5% 이번 주</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🚀</div>
+                    <div class="stat-content">
+                        <h3 class="stat-number" id="activeProjects">0</h3>
+                        <p class="stat-label">진행 중 프로젝트</p>
+                        <span class="stat-change neutral">진행 중</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-content">
+                        <h3 class="stat-number" id="monthlyRevenue">0원</h3>
+                        <p class="stat-label">이번 달 매출</p>
+                        <span class="stat-change positive">+18% 지난 달 대비</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-section">
+                <div class="chart-container">
+                    <h3>📈 견적 요청 추이</h3>
+                    <canvas id="quotesChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>📊 패키지별 선호도</h3>
+                    <canvas id="packagesChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="recent-activity">
+                <h3>🕒 최근 활동</h3>
+                <div class="activity-list" id="recentActivity">
+                    <!-- Activity items will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Quotes Management Tab -->
+        <div class="tab-content" id="quotes">
+            <div class="tab-header">
+                <h2>📋 견적 관리</h2>
+                <div class="tab-actions">
+                    <button class="btn btn-primary" onclick="exportQuotes()">📥 내보내기</button>
+                    <button class="btn btn-secondary" onclick="refreshQuotes()">🔄 새로고침</button>
+                    <button class="btn btn-outline" onclick="backupData()">💾 백업</button>
+                    <button class="btn btn-outline" onclick="restoreData()">📂 복원</button>
+                </div>
+            </div>
+
+            <!-- Quotes Filters -->
+            <div class="filters-section">
+                <div class="filter-group">
+                    <label>상태별 필터:</label>
+                    <select id="statusFilter" onchange="filterQuotes()">
+                        <option value="all">전체</option>
+                        <option value="new">신규</option>
+                        <option value="reviewing">검토 중</option>
+                        <option value="quoted">견적 발송</option>
+                        <option value="negotiating">협의 중</option>
+                        <option value="accepted">수락됨</option>
+                        <option value="rejected">거절됨</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>패키지별 필터:</label>
+                    <select id="packageFilter" onchange="filterQuotes()">
+                        <option value="all">전체</option>
+                        <option value="basic">스파크 1P</option>
+                        <option value="standard">빌더 6P</option>
+                        <option value="premium">맥스 10P</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>날짜 범위:</label>
+                    <input type="date" id="startDate" onchange="filterQuotes()">
+                    <span>~</span>
+                    <input type="date" id="endDate" onchange="filterQuotes()">
+                </div>
+            </div>
+
+            <!-- Quotes Table -->
+            <div class="table-container">
+                <table class="admin-table" id="quotesTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>고객명</th>
+                            <th>연락처</th>
+                            <th>패키지</th>
+                            <th>예상 금액</th>
+                            <th>상태</th>
+                            <th>요청일</th>
+                            <th>작업</th>
+                        </tr>
+                    </thead>
+                    <tbody id="quotesTableBody">
+                        <!-- Quotes will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Customers Management Tab -->
+        <div class="tab-content" id="customers">
+            <div class="tab-header">
+                <h2>👥 고객 관리</h2>
+                <div class="tab-actions">
+                    <button class="btn btn-primary" onclick="addCustomer()">➕ 고객 추가</button>
+                    <button class="btn btn-secondary" onclick="exportCustomers()">📥 내보내기</button>
+                </div>
+            </div>
+
+            <!-- Customer Stats -->
+            <div class="customer-stats">
+                <div class="stat-item">
+                    <span class="stat-number" id="newCustomers">0</span>
+                    <span class="stat-label">신규 고객 (이번 달)</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="repeatCustomers">0</span>
+                    <span class="stat-label">재방문 고객</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="avgOrderValue">0원</span>
+                    <span class="stat-label">평균 주문 금액</span>
+                </div>
+            </div>
+
+            <!-- Customers Table -->
+            <div class="table-container">
+                <table class="admin-table" id="customersTable">
+                    <thead>
+                        <tr>
+                            <th>고객 ID</th>
+                            <th>이름</th>
+                            <th>이메일</th>
+                            <th>연락처</th>
+                            <th>첫 방문일</th>
+                            <th>총 견적 수</th>
+                            <th>총 주문 금액</th>
+                            <th>상태</th>
+                            <th>작업</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customersTableBody">
+                        <!-- Customers will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Portfolio Management Tab -->
+        <div class="tab-content" id="portfolio">
+            <div class="tab-header">
+                <h2>🎨 포트폴리오 관리</h2>
+                <p>메인 페이지의 포트폴리오 섹션을 관리합니다</p>
+            </div>
+
+            <div class="portfolio-management">
+                <div class="portfolio-controls">
+                    <button class="btn btn-primary" onclick="addPortfolioItem()">+ 새 프로젝트 추가</button>
+                    <button class="btn btn-secondary" onclick="savePortfolioChanges()">💾 변경사항 저장</button>
+                </div>
+
+                <div class="portfolio-items-container">
+                    <div class="portfolio-item-admin" data-id="1">
+                        <div class="item-header">
+                            <h3>TechCorp 기업 사이트</h3>
+                            <div class="item-actions">
+                                <button class="btn btn-sm btn-outline" onclick="editPortfolioItem(1)">✏️ 수정</button>
+                                <button class="btn btn-sm btn-danger" onclick="deletePortfolioItem(1)">🗑️ 삭제</button>
+                            </div>
+                        </div>
+                        <div class="item-content">
+                            <div class="item-info">
+                                <div class="info-row">
+                                    <label>패키지 타입:</label>
+                                    <select class="form-control" onchange="updatePortfolioItem(1, 'category', this.value)">
+                                        <option value="basic">스파크 1P</option>
+                                        <option value="standard">빌더 6P</option>
+                                        <option value="premium" selected>맥스 10P</option>
+                                    </select>
+                                </div>
+                                <div class="info-row">
+                                    <label>프로젝트명:</label>
+                                    <input type="text" class="form-control" value="화성식품 F&B" onchange="updatePortfolioItem(1, 'title', this.value)">
+                                </div>
+                                <div class="info-row">
+                                    <label>아이콘:</label>
+                                    <input type="text" class="form-control" value="🍯" onchange="updatePortfolioItem(1, 'icon', this.value)">
+                                </div>
+                                <div class="info-row">
+                                    <label>포트폴리오 사진:</label>
+                                    <div class="image-upload-container">
+                                        <input type="file" class="form-control" accept="image/*" onchange="uploadPortfolioImage(1, this)" style="display: none;" id="portfolio-image-1">
+                                        <button type="button" class="btn btn-outline" onclick="document.getElementById('portfolio-image-1').click()">📷 사진 선택</button>
+                                        <div class="current-image">
+                                            <img src="images/portfolio/portfolio-1.jpg" alt="현재 사진" class="preview-image" onerror="this.style.display='none';">
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="removePortfolioImage(1)" style="display: none;">🗑️ 삭제</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="info-row">
+                                    <label>제작 기간:</label>
+                                    <input type="text" class="form-control" value="12일" onchange="updatePortfolioItem(1, 'duration', this.value)">
+                                </div>
+                                <div class="info-row">
+                                    <label>페이지 수:</label>
+                                    <input type="text" class="form-control" value="8페이지" onchange="updatePortfolioItem(1, 'pages', this.value)">
+                                </div>
+                                <div class="info-row">
+                                    <label>제작일:</label>
+                                    <input type="text" class="form-control" value="2024.12" onchange="updatePortfolioItem(1, 'date', this.value)">
+                                </div>
+                            </div>
+                            <div class="item-description">
+                                <label>프로젝트 설명:</label>
+                                <textarea class="form-control" rows="2" onchange="updatePortfolioItem(1, 'description', this.value)" placeholder="간단한 프로젝트 설명을 입력하세요">향미유 시장을 선도하는 화성식품의 브랜드 스토리와 품질 철학을 담은 기업 웹사이트입니다. HACCP 인증과 품질 관리 과정을 강조한 전문적인 디자인으로 제작되었습니다.</textarea>
+                            </div>
+                            <div class="item-tags">
+                                <label>태그 (쉼표로 구분):</label>
+                                <input type="text" class="form-control" value="#반응형디자인,#SEO최적화,#기업브랜딩,#B2B전문" onchange="updatePortfolioItem(1, 'tags', this.value)">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="portfolio-item-admin" data-id="2">
+                        <div class="item-header">
+                            <h3>SHM21</h3>
+                            <div class="item-actions">
+                                <button class="btn btn-sm btn-outline" onclick="editPortfolioItem(2)">✏️ 수정</button>
+                                <button class="btn btn-sm btn-danger" onclick="deletePortfolioItem(2)">🗑️ 삭제</button>
+                            </div>
+                        </div>
+                        <div class="item-content">
+                            <div class="item-info">
+                                <div class="info-row">
+                                    <label>패키지 타입:</label>
+                                    <select class="form-control" onchange="updatePortfolioItem(2, 'category', this.value)">
+                                        <option value="basic">스파크 1P</option>
+                                        <option value="standard" selected>빌더 6P</option>
+                                        <option value="premium">맥스 10P</option>
+                                    </select>
+                                </div>
+                                <div class="info-row">
+                                    <label>프로젝트명:</label>
+                                    <input type="text" class="form-control" value="SHM21" onchange="updatePortfolioItem(2, 'title', this.value)">
+                                </div>
+                                <div class="info-row">
+                                    <label>아이콘:</label>
+                                    <input type="text" class="form-control" value="🏥" onchange="updatePortfolioItem(2, 'icon', this.value)">
+                                </div>
+                                <div class="info-row">
+                                    <label>포트폴리오 사진:</label>
+                                    <div class="image-upload-container">
+                                        <input type="file" class="form-control" accept="image/*" onchange="uploadPortfolioImage(2, this)" style="display: none;" id="portfolio-image-2">
+                                        <button type="button" class="btn btn-outline" onclick="document.getElementById('portfolio-image-2').click()">📷 사진 선택</button>
+                                        <div class="current-image">
+                                            <img src="images/portfolio/portfolio-2.jpg" alt="현재 사진" class="preview-image" onerror="this.style.display='none';">
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="removePortfolioImage(2)" style="display: none;">🗑️ 삭제</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="info-row">
+                                    <label>제작 기간:</label>
+                                    <input type="text" class="form-control" value="8일" onchange="updatePortfolioItem(2, 'duration', this.value)">
+                                </div>
+                                <div class="info-row">
+                                    <label>페이지 수:</label>
+                                    <input type="text" class="form-control" value="6페이지" onchange="updatePortfolioItem(2, 'pages', this.value)">
+                                </div>
+                                <div class="info-row">
+                                    <label>제작일:</label>
+                                    <input type="text" class="form-control" value="2024.11" onchange="updatePortfolioItem(2, 'date', this.value)">
+                                </div>
+                            </div>
+                            <div class="item-description">
+                                <label>프로젝트 설명:</label>
+                                <textarea class="form-control" rows="2" onchange="updatePortfolioItem(2, 'description', this.value)" placeholder="간단한 프로젝트 설명을 입력하세요">의료 서비스 전문 기업의 웹사이트로, 신뢰성과 전문성을 강조한 클린한 디자인으로 제작되었습니다. 사용자 접근성을 고려한 직관적인 구조를 갖추고 있습니다.</textarea>
+                            </div>
+                            <div class="item-tags">
+                                <label>태그 (쉼표로 구분):</label>
+                                <input type="text" class="form-control" value="#의료서비스,#신뢰성,#접근성,#전문성" onchange="updatePortfolioItem(2, 'tags', this.value)">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="portfolio-item-admin" data-id="3">
+                        <div class="item-header">
+                            <h3>JWON-ROBO</h3>
+                            <div class="item-actions">
+                                <button class="btn btn-sm btn-outline" onclick="editPortfolioItem(3)">✏️ 수정</button>
+                                <button class="btn btn-sm btn-danger" onclick="deletePortfolioItem(3)">🗑️ 삭제</button>
+                            </div>
+                        </div>
+                        <div class="item-content">
+                            <div class="item-info">
+                                <div class="info-row">
+                                    <label>패키지 타입:</label>
+                                    <select class="form-control" onchange="updatePortfolioItem(3, 'category', this.value)">
+                                        <option value="basic">스파크 1P</option>
+                                        <option value="standard" selected>빌더 6P</option>
+                                        <option value="premium">맥스 10P</option>
+                                    </select>
+                                </div>
+                                <div class="info-row">
+                                    <label>프로젝트명:</label>
+                                    <input type="text" class="form-control" value="JWON-ROBO" onchange="updatePortfolioItem(3, 'title', this.value)">
+                                </div>
+                                <div class="info-row">
+                                    <label>아이콘:</label>
+                                    <input type="text" class="form-control" value="🤖" onchange="updatePortfolioItem(3, 'icon', this.value)">
+                                </div>
+                                <div class="info-row">
+                                    <label>포트폴리오 사진:</label>
+                                    <div class="image-upload-container">
+                                        <input type="file" class="form-control" accept="image/*" onchange="uploadPortfolioImage(3, this)" style="display: none;" id="portfolio-image-3">
+                                        <button type="button" class="btn btn-outline" onclick="document.getElementById('portfolio-image-3').click()">📷 사진 선택</button>
+                                        <div class="current-image">
+                                            <img src="images/portfolio/portfolio-3.jpg" alt="현재 사진" class="preview-image" onerror="this.style.display='none';">
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="removePortfolioImage(3)" style="display: none;">🗑️ 삭제</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="info-row">
+                                    <label>제작 기간:</label>
+                                    <input type="text" class="form-control" value="10일" onchange="updatePortfolioItem(3, 'duration', this.value)">
+                                </div>
+                                <div class="info-row">
+                                    <label>페이지 수:</label>
+                                    <input type="text" class="form-control" value="7페이지" onchange="updatePortfolioItem(3, 'pages', this.value)">
+                                </div>
+                                <div class="info-row">
+                                    <label>제작일:</label>
+                                    <input type="text" class="form-control" value="2024.10" onchange="updatePortfolioItem(3, 'date', this.value)">
+                                </div>
+                            </div>
+                            <div class="item-description">
+                                <label>프로젝트 설명:</label>
+                                <textarea class="form-control" rows="2" onchange="updatePortfolioItem(3, 'description', this.value)" placeholder="간단한 프로젝트 설명을 입력하세요">로봇 기술 전문 기업의 웹사이트로, 첨단 기술력과 혁신성을 강조한 모던한 디자인으로 제작되었습니다. 기술적 전문성을 시각적으로 잘 표현한 사이트입니다.</textarea>
+                            </div>
+                            <div class="item-tags">
+                                <label>태그 (쉼표로 구분):</label>
+                                <input type="text" class="form-control" value="#로봇기술,#혁신성,#기술력,#미래지향" onchange="updatePortfolioItem(3, 'tags', this.value)">
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Projects Management Tab -->
+        <div class="tab-content" id="projects">
+            <div class="tab-header">
+                <h2>🚀 프로젝트 관리</h2>
+                <div class="tab-actions">
+                    <button class="btn btn-primary" onclick="addProject()">➕ 프로젝트 추가</button>
+                    <button class="btn btn-secondary" onclick="refreshProjects()">🔄 새로고침</button>
+                </div>
+            </div>
+
+            <!-- Project Status Overview -->
+            <div class="project-status-overview">
+                <div class="status-card planning">
+                    <h3>📋 기획 단계</h3>
+                    <span class="status-count" id="planningCount">0</span>
+                </div>
+                <div class="status-card design">
+                    <h3>🎨 디자인 단계</h3>
+                    <span class="status-count" id="designCount">0</span>
+                </div>
+                <div class="status-card development">
+                    <h3>💻 개발 단계</h3>
+                    <span class="status-count" id="developmentCount">0</span>
+                </div>
+                <div class="status-card testing">
+                    <h3>🧪 테스트 단계</h3>
+                    <span class="status-count" id="testingCount">0</span>
+                </div>
+                <div class="status-card completed">
+                    <h3>✅ 완료</h3>
+                    <span class="status-count" id="completedCount">0</span>
+                </div>
+            </div>
+
+            <!-- Projects Table -->
+            <div class="table-container">
+                <table class="admin-table" id="projectsTable">
+                    <thead>
+                        <tr>
+                            <th>프로젝트 ID</th>
+                            <th>프로젝트명</th>
+                            <th>고객명</th>
+                            <th>패키지</th>
+                            <th>시작일</th>
+                            <th>예상 완료일</th>
+                            <th>진행률</th>
+                            <th>상태</th>
+                            <th>작업</th>
+                        </tr>
+                    </thead>
+                    <tbody id="projectsTableBody">
+                        <!-- Projects will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Add Project Modal -->
+        <div class="modal" id="addProjectModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>🚀 프로젝트 추가</h3>
+                    <button class="modal-close" onclick="closeModal('addProjectModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-section">
+                        <h4>견적 선택</h4>
+                        <div class="form-group">
+                            <label for="quoteSelect">견적 선택 *</label>
+                            <select id="quoteSelect" class="form-control" required>
+                                <option value="">견적을 선택하세요</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h4>프로젝트 정보</h4>
+                        <div class="form-group">
+                            <label for="projectName">프로젝트명 *</label>
+                            <input type="text" id="projectName" class="form-control" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="projectStartDate">시작일 *</label>
+                                <input type="date" id="projectStartDate" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="projectEndDate">예상 완료일 *</label>
+                                <input type="date" id="projectEndDate" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="projectStatus">상태 *</label>
+                            <select id="projectStatus" class="form-control" required>
+                                <option value="planning">📋 기획 단계</option>
+                                <option value="design">🎨 디자인 단계</option>
+                                <option value="development">💻 개발 단계</option>
+                                <option value="testing">🧪 테스트 단계</option>
+                                <option value="completed">✅ 완료</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="projectProgress">진행률 (%)</label>
+                            <input type="number" id="projectProgress" class="form-control" min="0" max="100" value="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal('addProjectModal')">취소</button>
+                    <button class="btn btn-primary" onclick="createProjectFromQuote()">프로젝트 생성</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Tab -->
+        <div class="tab-content" id="analytics">
+            <div class="tab-header">
+                <h2>📈 통계 분석</h2>
+                <div class="tab-actions">
+                    <button class="btn btn-primary" onclick="generateReport()">📊 리포트 생성</button>
+                    <button class="btn btn-secondary" onclick="exportAnalytics()">📥 데이터 내보내기</button>
+                </div>
+            </div>
+
+            <!-- Analytics Overview -->
+            <div class="analytics-overview">
+                <div class="analytics-card">
+                    <h3>📈 매출 추이</h3>
+                    <canvas id="revenueChart"></canvas>
+                </div>
+                <div class="analytics-card">
+                    <h3>👥 고객 유입 경로</h3>
+                    <canvas id="trafficChart"></canvas>
+                </div>
+                <div class="analytics-card">
+                    <h3>📦 패키지별 성과</h3>
+                    <canvas id="packagePerformanceChart"></canvas>
+                </div>
+                <div class="analytics-card">
+                    <h3>📅 월별 견적 요청</h3>
+                    <canvas id="monthlyQuotesChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Key Metrics -->
+            <div class="key-metrics">
+                <h3>🔑 주요 지표</h3>
+                <div class="metrics-grid">
+                    <div class="metric-item">
+                        <span class="metric-label">전환율</span>
+                        <span class="metric-value" id="conversionRate">0%</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">평균 견적 금액</span>
+                        <span class="metric-value" id="avgQuoteAmount">0원</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">고객 만족도</span>
+                        <span class="metric-value" id="customerSatisfaction">0%</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">프로젝트 완료율</span>
+                        <span class="metric-value" id="projectCompletionRate">0%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div class="tab-content" id="settings">
+            <div class="tab-header">
+                <h2>⚙️ 설정</h2>
+                <div class="tab-actions">
+                    <button class="btn btn-primary" onclick="saveSettings()">💾 저장</button>
+                    <button class="btn btn-secondary" onclick="resetSettings()">🔄 초기화</button>
+                </div>
+            </div>
+
+            <!-- Settings Sections -->
+            <div class="settings-sections">
+                <!-- Company Settings -->
+                <div class="settings-section">
+                    <h3>🏢 회사 정보</h3>
+                    <div class="form-group">
+                        <label for="companyName">회사명</label>
+                        <input type="text" id="companyName" placeholder="밝은내일 웹">
+                    </div>
+                    <div class="form-group">
+                        <label for="contactNumber">연락처</label>
+                        <input type="tel" id="contactNumber" placeholder="010-2212-7714">
+                    </div>
+                    <div class="form-group">
+                        <label for="contactEmail">이메일</label>
+                        <input type="email" id="contactEmail" placeholder="contact@brighttomorrow-web.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="companyAddress">주소</label>
+                        <textarea id="companyAddress" placeholder="회사 주소를 입력하세요"></textarea>
+                    </div>
+                </div>
+
+                <!-- Package Settings -->
+                <div class="settings-section">
+                    <h3>📦 패키지 설정</h3>
+                    <div class="package-settings">
+                        <div class="package-setting">
+                            <h4>스파크 1P</h4>
+                            <div class="form-group">
+                                <label>가격</label>
+                                <input type="number" id="basicPrice" value="99000">
+                            </div>
+                            <div class="form-group">
+                                <label>제작 기간 (일)</label>
+                                <input type="number" id="basicDuration" value="3">
+                            </div>
+                        </div>
+                        <div class="package-setting">
+                            <h4>빌더 6P</h4>
+                            <div class="form-group">
+                                <label>가격</label>
+                                <input type="number" id="standardPrice" value="390000">
+                            </div>
+                            <div class="form-group">
+                                <label>제작 기간 (일)</label>
+                                <input type="number" id="standardDuration" value="7">
+                            </div>
+                        </div>
+                        <div class="package-setting">
+                            <h4>맥스 10P</h4>
+                            <div class="form-group">
+                                <label>가격</label>
+                                <input type="number" id="premiumPrice" value="590000">
+                            </div>
+                            <div class="form-group">
+                                <label>제작 기간 (일)</label>
+                                <input type="number" id="premiumDuration" value="14">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notification Settings -->
+                <div class="settings-section">
+                    <h3>🔔 알림 설정</h3>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="emailNotifications" checked>
+                            이메일 알림 활성화
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="quoteNotifications" checked>
+                            신규 견적 요청 알림
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="projectNotifications" checked>
+                            프로젝트 진행 상황 알림
+                        </label>
+                    </div>
+                </div>
+
+                <!-- System Settings -->
+                <div class="settings-section">
+                    <h3>🖥️ 시스템 설정</h3>
+                    <div class="form-group">
+                        <label for="autoBackup">자동 백업 주기</label>
+                        <select id="autoBackup">
+                            <option value="daily">매일</option>
+                            <option value="weekly" selected>매주</option>
+                            <option value="monthly">매월</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="sessionTimeout">세션 타임아웃 (분)</label>
+                        <input type="number" id="sessionTimeout" value="30">
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="debugMode">
+                            디버그 모드 활성화
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <!-- Quote Detail Modal -->
+    <div class="modal" id="quoteDetailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📋 견적 상세 정보</h3>
+                <button class="modal-close" onclick="closeModal('quoteDetailModal')">&times;</button>
+            </div>
+            <div class="modal-body" id="quoteDetailContent">
+                <!-- Quote details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="updateQuoteStatus()">상태 업데이트</button>
+                <button class="btn btn-secondary" onclick="closeModal('quoteDetailModal')">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Detail Modal -->
+    <div class="modal" id="customerDetailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>👥 고객 상세 정보</h3>
+                <button class="modal-close" onclick="closeModal('customerDetailModal')">&times;</button>
+            </div>
+            <div class="modal-body" id="customerDetailContent">
+                <!-- Customer details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="updateCustomer()">고객 정보 수정</button>
+                <button class="btn btn-secondary" onclick="closeModal('customerDetailModal')">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Detail Modal -->
+    <div class="modal" id="projectDetailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🚀 프로젝트 상세 정보</h3>
+                <button class="modal-close" onclick="closeModal('projectDetailModal')">&times;</button>
+            </div>
+            <div class="modal-body" id="projectDetailContent">
+                <!-- Project details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="updateProject()">프로젝트 업데이트</button>
+                <button class="btn btn-secondary" onclick="closeModal('projectDetailModal')">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Quotes Modal -->
+    <div class="modal" id="customerQuotesModal">
+        <div class="modal-content customer-quotes-modal">
+            <div class="modal-header">
+                <h3>📋 고객 견적 내역</h3>
+                <button class="modal-close" onclick="closeModal('customerQuotesModal')">&times;</button>
+            </div>
+            <div class="modal-body" id="customerQuotesContent">
+                <!-- Customer quotes will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('customerQuotesModal')">닫기</button>
+            </div>
+        </div>
+    </div>
+
+                    <!-- Scripts -->
+                <script src="admin.js?v=1.7"></script>
+</body>
+</html>

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이미지 생성기</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .image-generator {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        canvas {
+            border: 1px solid #ddd;
+            margin: 10px 0;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        .download-link {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px;
+            background: #10b981;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>밝은내일 웹 - 이미지 생성기</h1>
+    
+    <div class="image-generator">
+        <h2>히어로 이미지들</h2>
+        <button onclick="generateHeroLaptop()">노트북 이미지 생성</button>
+        <button onclick="generateHeroMobile()">모바일 이미지 생성</button>
+        <div id="hero-images"></div>
+    </div>
+
+    <div class="image-generator">
+        <h2>포트폴리오 이미지들</h2>
+        <button onclick="generatePortfolioImages()">포트폴리오 이미지들 생성</button>
+        <div id="portfolio-images"></div>
+    </div>
+
+    <div class="image-generator">
+        <h2>스크린샷 이미지들</h2>
+        <button onclick="generateScreenshots()">스크린샷 이미지들 생성</button>
+        <div id="screenshot-images"></div>
+    </div>
+
+    <div class="image-generator">
+        <h2>OG 이미지</h2>
+        <button onclick="generateOGImage()">OG 이미지 생성</button>
+        <div id="og-image"></div>
+    </div>
+
+    <script>
+        function createCanvas(width, height) {
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            
+            // 배경 그라데이션
+            const gradient = ctx.createLinearGradient(0, 0, width, height);
+            gradient.addColorStop(0, '#f8fafc');
+            gradient.addColorStop(1, '#e2e8f0');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, width, height);
+            
+            return { canvas, ctx };
+        }
+
+        function addText(ctx, text, x, y, fontSize = 16, color = '#1a1a1a') {
+            ctx.font = `${fontSize}px Arial`;
+            ctx.fillStyle = color;
+            ctx.textAlign = 'center';
+            ctx.fillText(text, x, y);
+        }
+
+        function addRectangle(ctx, x, y, width, height, color = '#3b82f6') {
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, width, height);
+        }
+
+        function downloadCanvas(canvas, filename) {
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL();
+            link.textContent = `다운로드: ${filename}`;
+            link.className = 'download-link';
+            return link;
+        }
+
+        function generateHeroLaptop() {
+            const { canvas, ctx } = createCanvas(500, 300);
+            
+            // 노트북 프레임
+            addRectangle(ctx, 50, 50, 400, 250, '#374151');
+            addRectangle(ctx, 60, 60, 380, 230, '#1f2937');
+            
+            // 화면 내용
+            addRectangle(ctx, 70, 70, 360, 210, '#ffffff');
+            addText(ctx, '밝은내일 웹', 250, 120, 24, '#3b82f6');
+            addText(ctx, '브랜드를 닮은 커스터마이징', 250, 150, 16, '#1a1a1a');
+            addText(ctx, '템플릿의 속도와 맞춤의 디테일', 250, 180, 14, '#6b7280');
+            
+            // 버튼들
+            addRectangle(ctx, 150, 200, 100, 40, '#3b82f6');
+            addText(ctx, '견적 받기', 200, 225, 14, '#ffffff');
+            addRectangle(ctx, 270, 200, 100, 40, '#f8fafc');
+            addText(ctx, '포트폴리오', 320, 225, 14, '#1a1a1a');
+            
+            const container = document.getElementById('hero-images');
+            container.innerHTML = '';
+            container.appendChild(canvas);
+            container.appendChild(downloadCanvas(canvas, 'hero-laptop.png'));
+        }
+
+        function generateHeroMobile() {
+            const { canvas, ctx } = createCanvas(120, 200);
+            
+            // 모바일 프레임
+            addRectangle(ctx, 10, 10, 100, 180, '#374151');
+            addRectangle(ctx, 15, 15, 90, 170, '#1f2937');
+            
+            // 화면 내용
+            addRectangle(ctx, 20, 20, 80, 160, '#ffffff');
+            addText(ctx, '밝은내일', 60, 50, 12, '#3b82f6');
+            addText(ctx, '웹', 60, 70, 10, '#1a1a1a');
+            
+            // 간단한 메뉴
+            addRectangle(ctx, 25, 90, 70, 8, '#e2e8f0');
+            addRectangle(ctx, 25, 105, 70, 8, '#e2e8f0');
+            addRectangle(ctx, 25, 120, 70, 8, '#e2e8f0');
+            
+            const container = document.getElementById('hero-images');
+            container.appendChild(canvas);
+            container.appendChild(downloadCanvas(canvas, 'hero-mobile.png'));
+        }
+
+        function generatePortfolioImages() {
+            const container = document.getElementById('portfolio-images');
+            container.innerHTML = '';
+            
+            // Before 이미지들
+            for (let i = 1; i <= 3; i++) {
+                const { canvas, ctx } = createCanvas(400, 300);
+                
+                addText(ctx, `Before ${i}`, 200, 50, 20, '#1a1a1a');
+                addRectangle(ctx, 50, 80, 300, 180, '#f3f4f6');
+                addText(ctx, '기존 웹사이트', 200, 170, 16, '#6b7280');
+                addText(ctx, '개선 전 상태', 200, 200, 14, '#9ca3af');
+                
+                container.appendChild(canvas);
+                container.appendChild(downloadCanvas(canvas, `before${i}.jpg`));
+            }
+            
+            // After 이미지들
+            for (let i = 1; i <= 3; i++) {
+                const { canvas, ctx } = createCanvas(400, 300);
+                
+                addText(ctx, `After ${i}`, 200, 50, 20, '#1a1a1a');
+                addRectangle(ctx, 50, 80, 300, 180, '#dbeafe');
+                addText(ctx, '개선된 웹사이트', 200, 170, 16, '#3b82f6');
+                addText(ctx, '밝은내일 웹 제작', 200, 200, 14, '#1d4ed8');
+                
+                container.appendChild(canvas);
+                container.appendChild(downloadCanvas(canvas, `after${i}.jpg`));
+            }
+        }
+
+        function generateScreenshots() {
+            const container = document.getElementById('screenshot-images');
+            container.innerHTML = '';
+            
+            // 구글시트 스크린샷
+            const { canvas: sheetsCanvas, ctx: sheetsCtx } = createCanvas(500, 400);
+            addText(sheetsCanvas, 'Google Sheets 관리 화면', 250, 50, 20, '#1a1a1a');
+            addRectangle(sheetsCtx, 50, 80, 400, 280, '#ffffff');
+            
+            // 시트 헤더
+            addRectangle(sheetsCtx, 50, 80, 400, 30, '#f8fafc');
+            addText(sheetsCtx, 'A', 70, 100, 14, '#1a1a1a');
+            addText(sheetsCtx, 'B', 120, 100, 14, '#1a1a1a');
+            addText(sheetsCtx, 'C', 170, 100, 14, '#1a1a1a');
+            addText(sheetsCtx, 'D', 220, 100, 14, '#1a1a1a');
+            
+            // 데이터 행들
+            for (let i = 0; i < 8; i++) {
+                const y = 110 + i * 25;
+                addText(sheetsCtx, `${i + 1}`, 70, y, 12, '#6b7280');
+                addText(sheetsCtx, `문의자 ${i + 1}`, 120, y, 12, '#1a1a1a');
+                addText(sheetsCtx, `example${i + 1}@email.com`, 170, y, 12, '#1a1a1a');
+                addText(sheetsCtx, '2024-01-01', 220, y, 12, '#1a1a1a');
+            }
+            
+            container.appendChild(sheetsCanvas);
+            container.appendChild(downloadCanvas(sheetsCanvas, 'sheets-screenshot.png'));
+            
+            // GA4 스크린샷
+            const { canvas: gaCanvas, ctx: gaCtx } = createCanvas(500, 400);
+            addText(gaCanvas, 'Google Analytics 4', 250, 50, 20, '#1a1a1a');
+            addRectangle(gaCtx, 50, 80, 400, 280, '#ffffff');
+            
+            // 차트 영역
+            addRectangle(gaCtx, 50, 80, 400, 150, '#f8fafc');
+            addText(gaCtx, '방문자 추이', 250, 100, 16, '#1a1a1a');
+            
+            // 간단한 차트
+            for (let i = 0; i < 7; i++) {
+                const x = 80 + i * 50;
+                const height = 50 + Math.random() * 50;
+                addRectangle(gaCtx, x, 230 - height, 30, height, '#3b82f6');
+            }
+            
+            // 통계
+            addText(gaCtx, '총 방문자: 1,234명', 150, 280, 14, '#1a1a1a');
+            addText(gaCtx, '페이지뷰: 3,456회', 350, 280, 14, '#1a1a1a');
+            
+            container.appendChild(gaCanvas);
+            container.appendChild(downloadCanvas(gaCanvas, 'ga4-screenshot.png'));
+        }
+
+        function generateOGImage() {
+            const { canvas, ctx } = createCanvas(1200, 630);
+            
+            // 배경 그라데이션
+            const gradient = ctx.createLinearGradient(0, 0, 1200, 630);
+            gradient.addColorStop(0, '#3b82f6');
+            gradient.addColorStop(1, '#1d4ed8');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 1200, 630);
+            
+            // 메인 텍스트
+            ctx.font = 'bold 72px Arial';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.fillText('밝은내일 웹', 600, 250);
+            
+            ctx.font = '36px Arial';
+            ctx.fillText('브랜드를 닮은 커스터마이징', 600, 320);
+            ctx.fillText('빠르게 시작합니다', 600, 370);
+            
+            // 서브 텍스트
+            ctx.font = '24px Arial';
+            ctx.fillStyle = '#dbeafe';
+            ctx.fillText('템플릿의 속도와 맞춤의 디테일', 600, 450);
+            ctx.fillText('반응형 웹사이트 제작 서비스', 600, 480);
+            
+            // 장식 요소
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(100, 100, 1000, 430);
+            
+            const container = document.getElementById('og-image');
+            container.innerHTML = '';
+            container.appendChild(canvas);
+            container.appendChild(downloadCanvas(canvas, 'og-image.png'));
+        }
+
+        // 페이지 로드 시 모든 이미지 생성
+        window.onload = function() {
+            generateHeroLaptop();
+            generateHeroMobile();
+            generatePortfolioImages();
+            generateScreenshots();
+            generateOGImage();
+        };
+    </script>
+</body>
+</html>

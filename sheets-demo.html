@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sheets 데모 - 밝은내일 웹</title>
+    <style>
+        /* System fonts as fallback - No Google Fonts dependency */
+        * {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+        }
+    </style>
+    <link rel="stylesheet" href="styles.css?v=1.0.1">
+    <style>
+        .sheets-demo-page {
+            padding: 2rem 0;
+            background: #f8fafc;
+            min-height: 100vh;
+        }
+        
+        .sheets-demo-header {
+            background: white;
+            padding: 1rem 0;
+            border-bottom: 1px solid #e2e8f0;
+            margin-bottom: 2rem;
+        }
+        
+        .sheets-demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+        
+        .sheets-demo-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 0.5rem;
+        }
+        
+        .sheets-demo-subtitle {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+        
+        .sheets-demo-content {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .sheets-toolbar {
+            background: #f8fafc;
+            padding: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .sheets-toolbar button {
+            padding: 0.5rem 1rem;
+            border: 1px solid #d1d5db;
+            background: white;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .sheets-toolbar button:hover {
+            background: #f3f4f6;
+        }
+        
+        .sheets-toolbar .add-row-btn {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+        
+        .sheets-toolbar .add-row-btn:hover {
+            background: #1d4ed8;
+        }
+        
+        .sheets-table {
+            overflow-x: auto;
+        }
+        
+        .sheets-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .sheets-table th,
+        .sheets-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .sheets-table th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #374151;
+            position: sticky;
+            top: 0;
+        }
+        
+        .sheets-table tr:hover {
+            background: #f9fafb;
+        }
+        
+        .sheets-table .new-row {
+            background: #dbeafe;
+        }
+        
+        .sheets-table .status-cell {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .status-new {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .status-processing {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-completed {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .sheets-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #3b82f6;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+        
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: #3b82f6;
+            color: white;
+            text-decoration: none;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .back-button:hover {
+            background: #1d4ed8;
+        }
+    </style>
+</head>
+<body>
+    <div class="sheets-demo-page">
+        <div class="sheets-demo-header">
+            <div class="sheets-demo-container">
+                <a href="index.html" class="back-button">← 메인으로 돌아가기</a>
+                <h1 class="sheets-demo-title">Google Sheets 연동 데모</h1>
+                <p class="sheets-demo-subtitle">웹사이트 문의 폼이 실시간으로 Google Sheets에 저장되는 모습을 확인해보세요</p>
+            </div>
+        </div>
+        
+        <div class="sheets-demo-container">
+            <div class="sheets-stats">
+                <div class="stat-card">
+                    <div class="stat-number">127</div>
+                    <div class="stat-label">총 문의 건수</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">23</div>
+                    <div class="stat-label">이번 주 신규 문의</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">89%</div>
+                    <div class="stat-label">응답률</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">2.3일</div>
+                    <div class="stat-label">평균 응답 시간</div>
+                </div>
+            </div>
+            
+            <div class="sheets-demo-content">
+                <div class="sheets-toolbar">
+                    <button onclick="addNewRow()">+ 새 행 추가</button>
+                    <button onclick="refreshData()">새로고침</button>
+                    <button onclick="exportData()">내보내기</button>
+                    <button class="add-row-btn" onclick="simulateFormSubmission()">문의 폼 제출 시뮬레이션</button>
+                </div>
+                
+                <div class="sheets-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>번호</th>
+                                <th>이름</th>
+                                <th>이메일</th>
+                                <th>연락처</th>
+                                <th>패키지</th>
+                                <th>상태</th>
+                                <th>제출일시</th>
+                                <th>메모</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sheetsTableBody">
+                            <tr class="new-row">
+                                <td>127</td>
+                                <td>김철수</td>
+                                <td>kim@email.com</td>
+                                <td>010-1234-5678</td>
+                                <td>빌더 6P</td>
+                                <td><div class="status-cell"><span class="status-badge status-new">신규</span></div></td>
+                                <td>2024-01-15 14:30</td>
+                                <td>빠른 제작 희망</td>
+                            </tr>
+                            <tr>
+                                <td>126</td>
+                                <td>이영희</td>
+                                <td>lee@email.com</td>
+                                <td>010-2345-6789</td>
+                                <td>스파크 1P</td>
+                                <td><div class="status-cell"><span class="status-badge status-processing">처리중</span></div></td>
+                                <td>2024-01-15 13:45</td>
+                                <td>디자인 참고 자료 첨부 예정</td>
+                            </tr>
+                            <tr>
+                                <td>125</td>
+                                <td>박민수</td>
+                                <td>park@email.com</td>
+                                <td>010-3456-7890</td>
+                                <td>맥스 10P</td>
+                                <td><div class="status-cell"><span class="status-badge status-completed">완료</span></div></td>
+                                <td>2024-01-15 12:20</td>
+                                <td>견적서 발송 완료</td>
+                            </tr>
+                            <tr>
+                                <td>124</td>
+                                <td>최지영</td>
+                                <td>choi@email.com</td>
+                                <td>010-4567-8901</td>
+                                <td>빌더 6P</td>
+                                <td><div class="status-cell"><span class="status-badge status-completed">완료</span></div></td>
+                                <td>2024-01-15 11:15</td>
+                                <td>계약 진행 중</td>
+                            </tr>
+                            <tr>
+                                <td>123</td>
+                                <td>정현우</td>
+                                <td>jung@email.com</td>
+                                <td>010-5678-9012</td>
+                                <td>스파크 1P</td>
+                                <td><div class="status-cell"><span class="status-badge status-processing">처리중</span></div></td>
+                                <td>2024-01-15 10:30</td>
+                                <td>추가 요구사항 문의</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let rowCounter = 127;
+        
+        function addNewRow() {
+            const tbody = document.getElementById('sheetsTableBody');
+            const newRow = document.createElement('tr');
+            newRow.className = 'new-row';
+            newRow.innerHTML = `
+                <td>${++rowCounter}</td>
+                <td>새 고객</td>
+                <td>new@email.com</td>
+                <td>010-0000-0000</td>
+                <td>스파크 1P</td>
+                <td><div class="status-cell"><span class="status-badge status-new">신규</span></div></td>
+                <td>${new Date().toLocaleString()}</td>
+                <td>새로 추가된 행</td>
+            `;
+            tbody.insertBefore(newRow, tbody.firstChild);
+        }
+        
+        function simulateFormSubmission() {
+            const names = ['김철수', '이영희', '박민수', '최지영', '정현우', '한소영', '임태현', '송미라'];
+            const packages = ['스파크 1P', '빌더 6P', '맥스 10P'];
+            const statuses = ['신규', '처리중', '완료'];
+            
+            const randomName = names[Math.floor(Math.random() * names.length)];
+            const randomPackage = packages[Math.floor(Math.random() * packages.length)];
+            const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+            
+            const tbody = document.getElementById('sheetsTableBody');
+            const newRow = document.createElement('tr');
+            newRow.className = 'new-row';
+            newRow.innerHTML = `
+                <td>${++rowCounter}</td>
+                <td>${randomName}</td>
+                <td>${randomName.toLowerCase()}@email.com</td>
+                <td>010-${Math.floor(Math.random() * 9000) + 1000}-${Math.floor(Math.random() * 9000) + 1000}</td>
+                <td>${randomPackage}</td>
+                <td><div class="status-cell"><span class="status-badge status-${randomStatus === '신규' ? 'new' : randomStatus === '처리중' ? 'processing' : 'completed'}">${randomStatus}</span></div></td>
+                <td>${new Date().toLocaleString()}</td>
+                <td>웹사이트 문의 폼을 통해 자동 등록</td>
+            `;
+            tbody.insertBefore(newRow, tbody.firstChild);
+            
+            // 애니메이션 효과
+            newRow.style.animation = 'fadeIn 0.5s ease-in';
+        }
+        
+        function refreshData() {
+            location.reload();
+        }
+        
+        function exportData() {
+            alert('데이터가 Excel 파일로 내보내졌습니다.');
+        }
+        
+        // 자동 새로고침 (5초마다)
+        setInterval(() => {
+            if (Math.random() > 0.7) { // 30% 확률로 새 데이터 추가
+                simulateFormSubmission();
+            }
+        }, 5000);
+    </script>
+    
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</body>
+</html>

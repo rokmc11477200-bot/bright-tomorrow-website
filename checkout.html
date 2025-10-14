@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>견적 요청 - 밝은내일 웹</title>
+    <style>
+        /* System fonts as fallback - No Google Fonts dependency */
+        * {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+        }
+    </style>
+    
+    <!-- Complete External Resource Blocking -->
+    <script>
+        // Force cache invalidation and prevent external resources
+        (function() {
+            // Clear all caches
+            if ('caches' in window) {
+                caches.keys().then(function(names) {
+                    for (let name of names) {
+                        caches.delete(name);
+                    }
+                });
+            }
+            
+            // Block all external resource loading
+            const blockedDomains = ['googleapis.com', 'via.placeholder.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
+            
+            // Override fetch
+            const originalFetch = window.fetch;
+            window.fetch = function(url, options) {
+                const urlString = typeof url === 'string' ? url : url.toString();
+                if (blockedDomains.some(domain => urlString.includes(domain))) {
+                    console.warn('Blocked external fetch:', urlString);
+                    return Promise.reject(new Error('External resource blocked'));
+                }
+                return originalFetch(url, options);
+            };
+            
+            // Override XMLHttpRequest
+            const originalXHROpen = XMLHttpRequest.prototype.open;
+            XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
+                if (blockedDomains.some(domain => url.includes(domain))) {
+                    console.warn('Blocked external XHR:', url);
+                    return;
+                }
+                return originalXHROpen.call(this, method, url, async, user, password);
+            };
+            
+            // Override Image constructor
+            const originalImage = window.Image;
+            window.Image = function() {
+                const img = new originalImage();
+                const originalSrc = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
+                Object.defineProperty(img, 'src', {
+                    set: function(value) {
+                        if (blockedDomains.some(domain => value.includes(domain))) {
+                            console.warn('Blocked external image:', value);
+                            // Set a fallback SVG
+                            originalSrc.set.call(this, 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDMwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjNjY3ZWVhIi8+Cjx0ZXh0IHg9IjE1MCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+6rO17ZmU7YWM7ZmU7J20PC90ZXh0Pgo8L3N2Zz4K');
+                            return;
+                        }
+                        originalSrc.set.call(this, value);
+                    },
+                    get: originalSrc.get
+                });
+                return img;
+            };
+            
+            // Override all existing img src attributes
+            document.addEventListener('DOMContentLoaded', function() {
+                const images = document.querySelectorAll('img');
+                images.forEach(img => {
+                    if (img.src && blockedDomains.some(domain => img.src.includes(domain))) {
+                        console.warn('Blocked existing external image:', img.src);
+                        img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDMwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjNjY3ZWVhIi8+Cjx0ZXh0IHg9IjE1MCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+6rO17ZmU7YWM7ZmU7J20PC90ZXh0Pgo8L3N2Zz4K';
+                    }
+                });
+            });
+            
+            // Force reload on back/forward
+            if (window.performance && window.performance.navigation.type === window.performance.navigation.TYPE_BACK_FORWARD) {
+                window.location.reload();
+            }
+        })();
+    </script>
+    <link rel="stylesheet" href="styles.css?v=1.0.12&t=20240115&nocache=true&v=final&fix=header&ultimate=blocking&inline=css&zindex=fix&quote=complete">
+    <link rel="stylesheet" href="checkout.css?v=1.0.17&t=20240115&nocache=true&v=final&fix=header&ultimate=blocking&inline=css&zindex=fix&quote=complete&text=white&align=fixed&grid=layout&maintenance=fixed">
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-spinner" style="width: 50px; height: 50px; border: 4px solid #e2e8f0; border-top: 4px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 1rem;"></div>
+        <p>견적 요청 처리 중...</p>
+    </div>
+    
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <h1 class="logo">밝은내일 웹</h1>
+                <a href="index.html" class="back-link">← 메인으로 돌아가기</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="checkout-main">
+        <div class="container">
+            <div class="checkout-grid">
+                <!-- Order Summary -->
+                <div class="order-summary">
+                    <h2>📋 견적 요약</h2>
+                    <div class="package-details">
+                        <div class="package-info">
+                            <h3 id="selectedPackage">스파크 1P</h3>
+                            <p class="package-description">기본 랜딩페이지 제작</p>
+                        </div>
+                        <div class="package-price">
+                            <span class="price" id="packagePrice">99,000원</span>
+                        </div>
+                    </div>
+                    
+                    <div class="order-features">
+                        <h4>포함 기능</h4>
+                        <ul id="packageFeatures">
+                            <li>✅ 반응형 디자인</li>
+                            <li>✅ 기본 SEO 최적화</li>
+                            <li>✅ 정적 배포 (Vercel/Netlify)</li>
+                            <li>⚠️ 도메인 연결 (별도 비용)</li>
+                            <li>✅ SSL 인증서</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="order-timeline">
+                        <h4>제작 일정</h4>
+                        <div class="timeline-item">
+                            <div class="timeline-date">1일차</div>
+                            <div class="timeline-content">요구사항 확인 및 템플릿 추천</div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-date">3일차</div>
+                            <div class="timeline-content">1차 시안 제작 완료</div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-date">7일차</div>
+                            <div class="timeline-content">수정 완료 및 배포</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Checkout Form -->
+                <div class="checkout-form">
+                    <h2>💼 3단계 견적 프로세스</h2>
+                    
+                    <!-- Step Indicator with Progress -->
+                    <div class="step-indicator">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="step active" data-step="1">
+                            <div class="step-number">1</div>
+                            <div class="step-label">패키지 선택</div>
+                            <div class="step-status">현재 단계</div>
+                        </div>
+                        <div class="step" data-step="2">
+                            <div class="step-number">2</div>
+                            <div class="step-label">옵션 & 유지보수</div>
+                            <div class="step-status">다음 단계</div>
+                        </div>
+                        <div class="step" data-step="3">
+                            <div class="step-number">3</div>
+                            <div class="step-label">견적 요청</div>
+                            <div class="step-status">최종 단계</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Summary -->
+                    <div class="progress-summary">
+                        <div class="progress-info">
+                            <span class="progress-text">진행률: <span id="progressPercent">33</span>%</span>
+                            <span class="progress-steps"><span id="currentStepNum">1</span>/<span id="totalStepsNum">3</span> 단계</span>
+                        </div>
+                        <div class="progress-time">
+                            <span class="time-icon">⏱️</span>
+                            <span class="time-text">예상 완료 시간: <span id="estimatedTime">5분</span></span>
+                        </div>
+                    </div>
+                    
+                    <form id="checkoutForm" class="quote-form">
+                        <!-- Step 1: Package Selection -->
+                        <div class="form-step active" id="step1">
+                            <h3>📦 패키지 선택</h3>
+                            <div class="package-selection">
+                                <label class="package-option">
+                                    <input type="radio" name="package" value="basic" checked>
+                                    <div class="package-content">
+                                        <div class="package-header">
+                                            <span class="package-name">스파크 1P</span>
+                                            <span class="package-price" data-base-price="99000">99,000원</span>
+                                        </div>
+                                        <span class="package-desc">기본 랜딩페이지 제작</span>
+                                        <div class="package-badge popular">💡 가장 인기!</div>
+                                    </div>
+                                </label>
+                                <label class="package-option">
+                                    <input type="radio" name="package" value="standard">
+                                    <div class="package-content">
+                                        <div class="package-header">
+                                            <span class="package-name">빌더 6P</span>
+                                            <span class="package-price" data-base-price="390000">390,000원</span>
+                                        </div>
+                                        <span class="package-desc">다중 페이지 웹사이트 제작</span>
+                                        <div class="package-badge recommended">⭐ 추천!</div>
+                                    </div>
+                                </label>
+                                <label class="package-option">
+                                    <input type="radio" name="package" value="premium">
+                                    <div class="package-content">
+                                        <div class="package-header">
+                                            <span class="package-name">맥스 10P</span>
+                                            <span class="package-price" data-base-price="590000">590,000원</span>
+                                        </div>
+                                        <span class="package-desc">프리미엄 웹사이트 제작</span>
+                                        <div class="package-badge premium">🚀 프리미엄!</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Additional Options & Maintenance -->
+                        <div class="form-step" id="step2">
+                            <h3>🔧 추가 옵션 & 유지보수</h3>
+                            <p class="step-description">필요한 추가 기능과 유지보수 플랜을 선택해주세요.</p>
+                            
+                            <!-- 추가 옵션 섹션 -->
+                            <div class="options-section">
+                                <h4>📋 추가 기능</h4>
+                                
+                                <!-- 인기 번들 옵션 -->
+                                <div class="bundle-options">
+                                    <label class="bundle-option popular-bundle">
+                                        <input type="checkbox" name="bundleOptions" value="starter" data-price="95000">
+                                        <div class="bundle-content">
+                                            <div class="bundle-header">
+                                                <span class="bundle-name">🚀 스타터 번들</span>
+                                                <span class="bundle-price">95,000원</span>
+                                                <div class="bundle-badge">인기!</div>
+                                            </div>
+                                            <span class="bundle-desc">도메인 + 호스팅 + 이메일 (개별가 105,000원 → 95,000원)</span>
+                                            <div class="bundle-items">
+                                                <span class="bundle-item">✅ 도메인 등록 (1년)</span>
+                                                <span class="bundle-item">✅ 웹 호스팅 (1년)</span>
+                                                <span class="bundle-item">✅ 이메일 호스팅 (1년)</span>
+                                            </div>
+                                        </div>
+                                    </label>
+                                    
+                                    <label class="bundle-option premium-bundle">
+                                        <input type="checkbox" name="bundleOptions" value="business" data-price="175000">
+                                        <div class="bundle-content">
+                                            <div class="bundle-header">
+                                                <span class="bundle-name">💼 비즈니스 번들</span>
+                                                <span class="bundle-price">175,000원</span>
+                                                <div class="bundle-badge">추천!</div>
+                                            </div>
+                                            <span class="bundle-desc">스타터 번들 + 결제시스템 + 소셜미디어 (개별가 205,000원 → 175,000원)</span>
+                                            <div class="bundle-items">
+                                                <span class="bundle-item">✅ 스타터 번들 포함</span>
+                                                <span class="bundle-item">✅ 온라인 결제 시스템</span>
+                                                <span class="bundle-item">✅ 소셜미디어 연동</span>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                                
+                                <!-- 개별 옵션 -->
+                                <div class="individual-options">
+                                    <h5>개별 옵션 선택</h5>
+                                <div class="additional-options-step">
+                                    <div class="options-grid">
+                                    <label class="option-item">
+                                        <input type="checkbox" name="additionalOptions" value="domain" data-price="25000">
+                                        <div class="option-content">
+                                            <div class="option-info">
+                                                <span class="option-name">도메인 등록 (1년)</span>
+                                                <span class="option-price">25,000원</span>
+                                            </div>
+                                            <span class="option-desc">새로운 도메인을 1년간 등록</span>
+                                        </div>
+                                    </label>
+                                    <label class="option-item">
+                                        <input type="checkbox" name="additionalOptions" value="hosting" data-price="35000">
+                                        <div class="option-content">
+                                            <div class="option-info">
+                                                <span class="option-name">웹 호스팅 (1년)</span>
+                                                <span class="option-price">35,000원</span>
+                                            </div>
+                                            <span class="option-desc">안정적인 웹 호스팅 서비스</span>
+                                        </div>
+                                    </label>
+                                    <label class="option-item">
+                                        <input type="checkbox" name="additionalOptions" value="email" data-price="45000">
+                                        <div class="option-content">
+                                            <div class="option-info">
+                                                <span class="option-name">이메일 호스팅 (1년)</span>
+                                                <span class="option-price">45,000원</span>
+                                            </div>
+                                            <span class="option-desc">회사 도메인 이메일 주소</span>
+                                        </div>
+                                    </label>
+                                    <label class="option-item">
+                                        <input type="checkbox" name="additionalOptions" value="social" data-price="35000">
+                                        <div class="option-content">
+                                            <div class="option-info">
+                                                <span class="option-name">소셜미디어 연동</span>
+                                                <span class="option-price">35,000원</span>
+                                            </div>
+                                            <span class="option-desc">페이스북/인스타그램 연동</span>
+                                        </div>
+                                    </label>
+                                    <label class="option-item">
+                                        <input type="checkbox" name="additionalOptions" value="payment" data-price="80000">
+                                        <div class="option-content">
+                                            <div class="option-info">
+                                                <span class="option-name">결제 시스템 연동</span>
+                                                <span class="option-price">80,000원</span>
+                                            </div>
+                                            <span class="option-desc">PG사 연동 및 결제 페이지</span>
+                                        </div>
+                                    </label>
+                                    <label class="option-item">
+                                        <input type="checkbox" name="additionalOptions" value="booking" data-price="65000">
+                                        <div class="option-content">
+                                            <div class="option-info">
+                                                <span class="option-name">예약 시스템</span>
+                                                <span class="option-price">65,000원</span>
+                                            </div>
+                                            <span class="option-desc">실시간 예약 관리 시스템</span>
+                                        </div>
+                                    </label>
+                                    <label class="option-item">
+                                        <input type="checkbox" name="additionalOptions" value="seo" data-price="55000">
+                                        <div class="option-content">
+                                            <div class="option-info">
+                                                <span class="option-name">고급 SEO 최적화</span>
+                                                <span class="option-price">55,000원</span>
+                                            </div>
+                                            <span class="option-desc">키워드 분석 및 구조화된 데이터</span>
+                                        </div>
+                                    </label>
+                                    <label class="option-item">
+                                        <input type="checkbox" name="additionalOptions" value="chat" data-price="40000">
+                                        <div class="option-content">
+                                            <div class="option-info">
+                                                <span class="option-name">실시간 채팅 시스템</span>
+                                                <span class="option-price">40,000원</span>
+                                            </div>
+                                            <span class="option-desc">고객과의 실시간 소통</span>
+                                        </div>
+                                    </label>
+                                    <label class="option-item">
+                                        <input type="checkbox" name="additionalOptions" value="analytics" data-price="50000">
+                                        <div class="option-content">
+                                            <div class="option-info">
+                                                <span class="option-name">고급 분석 도구</span>
+                                                <span class="option-price">50,000원</span>
+                                            </div>
+                                            <span class="option-desc">사용자 행동 분석 및 전환율 추적</span>
+                                        </div>
+                                    </label>
+                                    <label class="option-item">
+                                        <input type="checkbox" name="additionalOptions" value="multilang" data-price="75000">
+                                        <div class="option-content">
+                                            <div class="option-info">
+                                                <span class="option-name">다국어 지원</span>
+                                                <span class="option-price">75,000원</span>
+                                            </div>
+                                            <span class="option-desc">3개 언어 지원 (한/영/중)</span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 유지보수 섹션 -->
+                            <div class="maintenance-section">
+                                <h4>🛠️ 유지보수 플랜</h4>
+                                <div class="maintenance-options">
+                                    <label class="maintenance-option">
+                                        <input type="radio" name="maintenance" value="none" checked>
+                                        <div class="maintenance-content">
+                                            <div class="maintenance-header">
+                                                <span class="maintenance-name">유지보수 없음</span>
+                                                <span class="maintenance-price">0원</span>
+                                            </div>
+                                            <span class="maintenance-desc">별도 유지보수 없이 웹사이트만 제작</span>
+                                        </div>
+                                    </label>
+                                    <label class="maintenance-option">
+                                        <input type="radio" name="maintenance" value="basic" data-price="69000">
+                                        <div class="maintenance-content">
+                                            <div class="maintenance-header">
+                                                <span class="maintenance-name">🔧 기본 유지보수</span>
+                                                <span class="maintenance-price">69,000원/월</span>
+                                            </div>
+                                            <span class="maintenance-desc">서버 모니터링, 보안 업데이트, 기본 오류 수정</span>
+                                        </div>
+                                    </label>
+                                    <label class="maintenance-option">
+                                        <input type="radio" name="maintenance" value="standard" data-price="149000">
+                                        <div class="maintenance-content">
+                                            <div class="maintenance-header">
+                                                <span class="maintenance-name">⚡ 표준 유지보수</span>
+                                                <span class="maintenance-price">149,000원/월</span>
+                                            </div>
+                                            <span class="maintenance-desc">콘텐츠 업데이트, SEO 관리, 성능 최적화 포함</span>
+                                        </div>
+                                    </label>
+                                    <label class="maintenance-option">
+                                        <input type="radio" name="maintenance" value="premium" data-price="249000">
+                                        <div class="maintenance-content">
+                                            <div class="maintenance-header">
+                                                <span class="maintenance-name">🚀 프리미엄 유지보수</span>
+                                                <span class="maintenance-price">249,000원/월</span>
+                                            </div>
+                                            <span class="maintenance-desc">실시간 모니터링, 기능 개선, 긴급 대응 포함</span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Quote Request Information -->
+                        <div class="form-step" id="step3">
+                            <h3>📝 견적 요청 정보</h3>
+                            
+                            <!-- Customer Information -->
+                            <div class="form-section">
+                                <h4>고객 정보</h4>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="customerName">이름 *</label>
+                                        <input type="text" id="customerName" class="form-control" required>
+                                        <div class="field-error" style="display: none;">
+                                            <svg class="field-error-icon" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                            </svg>
+                                            <span class="error-message">이름을 입력해주세요.</span>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="customerEmail">이메일 *</label>
+                                        <input type="email" id="customerEmail" class="form-control" required placeholder="example@email.com">
+                                        <div class="field-error" style="display: none;">
+                                            <svg class="field-error-icon" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                            </svg>
+                                            <span class="error-message">올바른 이메일 형식을 입력해주세요.</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="customerPhone">연락처 *</label>
+                                    <input type="tel" id="customerPhone" class="form-control" required placeholder="010-1234-5678">
+                                    <div class="field-error" style="display: none;">
+                                        <svg class="field-error-icon" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                        </svg>
+                                        <span class="error-message">올바른 전화번호 형식을 입력해주세요.</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Project Information -->
+                            <div class="form-section">
+                                <h4>프로젝트 정보</h4>
+                                <div class="form-group">
+                                    <label for="projectName">프로젝트명 *</label>
+                                    <input type="text" id="projectName" class="form-control" required placeholder="예: 우리회사 랜딩페이지">
+                                    <div class="field-error" style="display: none;">
+                                        <svg class="field-error-icon" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                        </svg>
+                                        <span class="error-message">프로젝트명을 입력해주세요.</span>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="projectDescription">프로젝트 설명 *</label>
+                                    <textarea id="projectDescription" class="form-control" rows="6" required placeholder="📋 프로젝트 상세 정보를 입력해주세요
+
+🎨 디자인 요구사항:
+• 원하시는 색상 테마나 브랜드 컬러
+• 참고하고 싶은 웹사이트 (URL 포함)
+• 특별히 원하는 디자인 스타일 (미니멀, 모던, 클래식 등)
+
+💻 기능 요구사항:
+• 필요한 주요 기능들 (예: 회원가입, 결제, 예약, 게시판 등)
+• 모바일 반응형 여부
+• 다국어 지원 필요 여부
+• 특별한 애니메이션이나 인터랙션
+
+📱 추가 요구사항:
+• 특정 페이지 구성 (예: 메인, 소개, 서비스, 문의 등)
+• 콘텐츠 관리 시스템 필요 여부
+• SEO 최적화 요구사항
+• 기타 특별한 요청사항
+
+💡 참고사이트가 있으시면 URL을 함께 적어주세요!"></textarea>
+                                    <div class="field-error" style="display: none;">
+                                        <svg class="field-error-icon" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                        </svg>
+                                        <span class="error-message">프로젝트 설명을 입력해주세요.</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Terms -->
+                            <div class="form-section">
+                                <div class="form-group">
+                                    <div class="terms-checkbox">
+                                        <label>
+                                            <input type="checkbox" id="agreeTerms" class="form-control" required>
+                                            <span>서비스 이용약관 및 개인정보처리방침에 동의합니다 *</span>
+                                        </label>
+                                    </div>
+                                    <div class="field-error" style="display: none;">
+                                        <svg class="field-error-icon" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                        </svg>
+                                        <span class="error-message">서비스 이용약관에 동의해주세요.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Total -->
+                        <div class="order-total">
+                            <div class="total-row">
+                                <span>서비스 금액</span>
+                                <span id="serviceAmount">99,000원</span>
+                            </div>
+                            <div class="total-row">
+                                <span>부가세 (10%)</span>
+                                <span id="taxAmount">9,900원</span>
+                            </div>
+                            <div class="total-row total">
+                                <span>총 견적금액</span>
+                                <span id="totalAmount">108,900원</span>
+                            </div>
+                        </div>
+
+                        <!-- Navigation Buttons -->
+                        <div class="form-navigation">
+                            <button type="button" class="btn btn-secondary" id="prevBtn" style="display: none;">이전</button>
+                            <button type="button" class="btn btn-primary" id="nextBtn">다음</button>
+                            <button type="submit" class="btn btn-primary" id="submitBtn" style="display: none;">
+                                <span class="btn-text">견적 요청하기</span>
+                                <span class="btn-loading" style="display: none;">처리중...</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Success Modal -->
+    <div class="success-modal" id="successModal">
+        <div class="success-content">
+            <div class="success-icon">🎉</div>
+            <h2>견적 요청이 완료되었습니다!</h2>
+            <p>견적 요청이 성공적으로 접수되었습니다. 견적서는 이메일과 문자로 발송해드립니다.</p>
+            <div class="success-details">
+                <div class="detail-item">
+                    <span class="detail-label">견적번호:</span>
+                    <span class="detail-value" id="orderNumber">BT-2024-001</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">예상 완료일:</span>
+                    <span class="detail-value" id="completionDate">2024년 1월 22일</span>
+                </div>
+            </div>
+            <div class="success-message">
+                <p><span>📧</span><span><strong>이메일 발송:</strong> 상세 견적서와 제작 일정</span></p>
+                <p><span>📱</span><span><strong>문자 발송:</strong> 견적 접수 확인 및 담당자 연락처</span></p>
+                <p><span>💬</span><span><strong>빠른 상담:</strong> 추가 문의사항이 있으시면 언제든 연락주세요!</span></p>
+            </div>
+            <div class="success-actions">
+                <button class="btn btn-primary" onclick="goToMain()">메인 화면으로 이동</button>
+                <button class="btn btn-outline" onclick="closeSuccessModal()">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="checkout.js?v=1.0.20&t=20240115&nocache=true&v=final&fix=header&ultimate=blocking&inline=css&zindex=fix&quote=complete&text=white&align=fixed&grid=layout&script=integration&multi=approach&maintenance=fixed&options=enhanced&ui=forced"></script>
+</body>
+</html>
