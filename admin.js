@@ -296,14 +296,22 @@ function switchTab(tabName) {
 }
 
 // Dashboard Data Loading
-function loadDashboardData() {
+async function loadDashboardData() {
     console.log('📊 Loading dashboard data...');
     
     try {
-        // Load quotes data
-        const savedQuotes = localStorage.getItem('quotesData');
-        if (savedQuotes) {
-            quotesData = JSON.parse(savedQuotes);
+        // Firebase에서 견적 데이터 로드 시도
+        if (typeof window.loadQuotesFromFirebase === 'function') {
+            console.log('🔥 Loading quotes from Firebase...');
+            quotesData = await window.loadQuotesFromFirebase();
+            console.log('✅ Firebase에서 견적 로드 완료:', quotesData.length, '개');
+        } else {
+            console.log('⚠️ Firebase 함수를 찾을 수 없음, localStorage에서 로드...');
+            // Firebase 로드 실패 시 localStorage에서 로드
+            const savedQuotes = localStorage.getItem('quotesData');
+            if (savedQuotes) {
+                quotesData = JSON.parse(savedQuotes);
+            }
         }
         
         // Load customers data

@@ -761,16 +761,20 @@ function initQuoteSystem() {
             const quoteData = collectQuoteData();
             console.log('📋 Collected quote data:', quoteData);
             
-            // 방법 1: script.js의 견적 저장 로직 호출
-            if (typeof window.saveQuoteToStorage === 'function') {
-                console.log('💾 Method 1: Saving quote using script.js function...');
-                window.saveQuoteToStorage(quoteData);
-                console.log('✅ Quote saved successfully via script.js!');
+            // Firebase에 견적 저장 시도
+            if (typeof window.saveQuoteToFirebase === 'function') {
+                console.log('🔥 Method 1: Saving quote to Firebase...');
+                const result = await window.saveQuoteToFirebase(quoteData);
+                
+                if (result.success) {
+                    console.log('✅ Quote saved successfully to Firebase!');
+                } else {
+                    console.log('⚠️ Firebase 저장 실패, localStorage로 백업 저장...');
+                    saveQuoteToAdmin(quoteData);
+                }
             } else {
-                console.log('⚠️ saveQuoteToStorage function not found, using direct method...');
-                // 방법 2: 직접 저장
+                console.log('⚠️ Firebase 함수를 찾을 수 없음, localStorage로 저장...');
                 saveQuoteToAdmin(quoteData);
-                console.log('✅ Quote saved directly to localStorage!');
             }
             
             // 성공 모달 표시

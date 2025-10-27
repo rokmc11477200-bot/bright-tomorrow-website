@@ -1262,26 +1262,48 @@ function handleAdminClick() {
     }, 1000);
 }
 
-function openAdminLogin() {
+async function openAdminLogin() {
+    // 로그인 시도 제한 확인
+    const attemptCheck = window.securityManager.checkLoginAttempts();
+    if (!attemptCheck.allowed) {
+        alert(attemptCheck.message);
+        return;
+    }
+    
     // 비밀번호 입력
     const password = prompt('관리자 비밀번호를 입력하세요:');
     
-    if (password === 'asdasd9123!@') {
-        // 인증 상태를 여러 방법으로 설정 (더 확실하게)
-        localStorage.setItem('adminAuthenticated', 'true');
-        localStorage.setItem('adminLoginTime', Date.now().toString());
-        sessionStorage.setItem('adminAuthenticated', 'true');
-        
-        // 추가 인증 데이터
-        localStorage.setItem('adminStatus', 'authenticated');
-        sessionStorage.setItem('adminSession', 'active');
-        
-        // 관리자 버튼 표시
-        showAdminButton();
-        
-        alert('관리자 인증이 완료되었습니다!\n\n상단에 관리자 페이지 버튼이 나타났습니다.');
-    } else if (password !== null) {
-        alert('비밀번호가 올바르지 않습니다.');
+    if (password !== null) {
+        try {
+            // 보안 강화된 비밀번호 검증
+            const isValidPassword = await window.securityManager.verifyPassword(password);
+            
+            if (isValidPassword) {
+                // 로그인 성공 기록
+                window.securityManager.recordLoginAttempt(true);
+                
+                // 인증 상태를 여러 방법으로 설정 (더 확실하게)
+                localStorage.setItem('adminAuthenticated', 'true');
+                localStorage.setItem('adminLoginTime', Date.now().toString());
+                sessionStorage.setItem('adminAuthenticated', 'true');
+                
+                // 추가 인증 데이터
+                localStorage.setItem('adminStatus', 'authenticated');
+                sessionStorage.setItem('adminSession', 'active');
+                
+                // 관리자 버튼 표시
+                showAdminButton();
+                
+                alert('관리자 인증이 완료되었습니다!\n\n상단에 관리자 페이지 버튼이 나타났습니다.');
+            } else {
+                // 로그인 실패 기록
+                window.securityManager.recordLoginAttempt(false);
+                alert('비밀번호가 올바르지 않습니다.');
+            }
+        } catch (error) {
+            console.error('로그인 오류:', error);
+            alert('로그인 처리 중 오류가 발생했습니다.');
+        }
     }
 }
 
