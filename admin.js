@@ -73,9 +73,10 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeTabs();
     
     // Load all data in correct order
-    loadQuotesData();
-    loadCustomersData();
-    loadProjectsData();
+    loadQuotesData().then(() => {
+        loadCustomersData();
+        loadProjectsData();
+    });
     
     // Initialize charts and dashboard
     initializeCharts();
@@ -130,9 +131,10 @@ function setupRealTimeSync() {
     const storageHandler = function(e) {
         if (e.key === 'quotesData') {
             console.log('📋 Quotes data updated, refreshing all data...');
-            loadQuotesData();
-            loadCustomersData();
-            loadProjectsData();
+            loadQuotesData().then(() => {
+                loadCustomersData();
+                loadProjectsData();
+            });
             
             // Update all stats and UI
             updateDashboardStats();
@@ -155,9 +157,10 @@ function setupRealTimeSync() {
     const customEventHandler = function() {
         console.log('📋 Quotes data updated via custom event, refreshing all data...');
         console.log('🔍 Event details:', event);
-        loadQuotesData();
-        loadCustomersData();
-        loadProjectsData();
+        loadQuotesData().then(() => {
+            loadCustomersData();
+            loadProjectsData();
+        });
         
         // Update all stats and UI
         updateDashboardStats();
@@ -187,24 +190,25 @@ function setupRealTimeSync() {
         if (currentQuotes !== window.lastQuotesData) {
             window.lastQuotesData = currentQuotes;
             console.log('📋 Quotes data changed, refreshing all data...');
-            loadQuotesData();
-            loadCustomersData();
-            loadProjectsData();
-            
-            // Update all stats and UI
-            updateDashboardStats();
-            updateCustomerStats();
-            updateProjectStats();
-            
-            // Re-render tables
-            renderQuotesTable();
-            renderCustomersTable();
-            renderProjectsTable();
-            
-            // Only update charts if we're on dashboard tab
-            if (currentTab === 'dashboard') {
-                initializeCharts();
-            }
+            loadQuotesData().then(() => {
+                loadCustomersData();
+                loadProjectsData();
+                
+                // Update all stats and UI
+                updateDashboardStats();
+                updateCustomerStats();
+                updateProjectStats();
+                
+                // Re-render tables
+                renderQuotesTable();
+                renderCustomersTable();
+                renderProjectsTable();
+                
+                // Only update charts if we're on dashboard tab
+                if (currentTab === 'dashboard') {
+                    initializeCharts();
+                }
+            });
         } else {
             console.log('🔄 No changes detected in quotes data');
         }
@@ -552,30 +556,41 @@ function getPackageDataForChart() {
 }
 
 // Quotes Management
-function loadQuotesData() {
+async function loadQuotesData() {
     console.log('📋 Loading quotes data...');
     
     try {
-        const savedQuotes = localStorage.getItem('quotesData');
-        console.log('🔍 Raw quotes data from localStorage:', savedQuotes);
-        
-        if (savedQuotes) {
-            quotesData = JSON.parse(savedQuotes);
-            console.log('✅ Quotes data loaded successfully:', quotesData.length, 'quotes');
-            console.log('📊 Quotes data content:', quotesData);
+        // Firebase에서 견적 데이터 로드 시도
+        if (typeof window.loadQuotesFromFirebase === 'function') {
+            console.log('🔥 Loading quotes from Firebase...');
+            quotesData = await window.loadQuotesFromFirebase();
+            console.log('✅ Firebase에서 견적 로드 완료:', quotesData.length, '개');
+            console.log('📊 Firebase 견적 데이터:', quotesData);
         } else {
-            quotesData = [];
-            console.log('ℹ️ No quotes data found, initializing empty array');
+            console.log('⚠️ Firebase 함수를 찾을 수 없음, localStorage에서 로드...');
+            // Firebase 로드 실패 시 localStorage에서 로드
+            const savedQuotes = localStorage.getItem('quotesData');
+            console.log('🔍 Raw quotes data from localStorage:', savedQuotes);
             
-            // 테스트용 견적 데이터 추가
-            addTestData();
+            if (savedQuotes) {
+                quotesData = JSON.parse(savedQuotes);
+                console.log('✅ localStorage에서 견적 로드 완료:', quotesData.length, '개');
+            } else {
+                quotesData = [];
+                console.log('ℹ️ No quotes data found, initializing empty array');
+                
+                // 테스트용 견적 데이터 추가
+                addTestData();
+            }
         }
+        
+        // 견적 테이블 렌더링
+        renderQuotesTable();
+        
     } catch (error) {
         console.error('❌ Error loading quotes data:', error);
         quotesData = [];
     }
-    
-    renderQuotesTable();
 }
 
 function addTestData() {
