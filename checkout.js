@@ -761,27 +761,20 @@ function initQuoteSystem() {
             const quoteData = collectQuoteData();
             console.log('📋 Collected quote data:', quoteData);
             
-            // localStorage에 항상 백업 저장 (Firebase 성공 여부와 관계없이)
-            saveQuoteToAdmin(quoteData);
-            console.log('💾 견적이 localStorage에 백업 저장되었습니다.');
-            
             // Firebase에 견적 저장 시도
             if (typeof window.saveQuoteToFirebase === 'function') {
-                console.log('🔥 Firebase에 견적 저장 시도...');
-                try {
-                    const result = await window.saveQuoteToFirebase(quoteData);
-                    
-                    if (result.success) {
-                        console.log('✅ Firebase 저장 성공!');
-                    } else {
-                        console.log('⚠️ Firebase 저장 실패 (localStorage 백업 완료)');
-                    }
-                } catch (firebaseError) {
-                    console.error('❌ Firebase 저장 오류:', firebaseError);
-                    console.log('💾 localStorage 백업으로 계속 진행');
+                console.log('🔥 Method 1: Saving quote to Firebase...');
+                const result = await window.saveQuoteToFirebase(quoteData);
+                
+                if (result.success) {
+                    console.log('✅ Quote saved successfully to Firebase!');
+                } else {
+                    console.log('⚠️ Firebase 저장 실패, localStorage로 백업 저장...');
+                    saveQuoteToAdmin(quoteData);
                 }
             } else {
-                console.log('⚠️ Firebase 함수 미로드 (localStorage 백업 완료)');
+                console.log('⚠️ Firebase 함수를 찾을 수 없음, localStorage로 저장...');
+                saveQuoteToAdmin(quoteData);
             }
             
             // 성공 모달 표시
