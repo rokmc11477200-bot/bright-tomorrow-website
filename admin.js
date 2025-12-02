@@ -66,23 +66,14 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     
-    // 테스트 데이터 완전 삭제
-    clearAllTestDataDirectly();
-    
     // Initialize components
     initializeTabs();
     
-    // Load all data in correct order
-    loadQuotesData().then(() => {
-        loadCustomersData();
-        loadProjectsData();
-    });
+    // Firebase 모듈이 로드될 때까지 기다린 후 데이터 로드
+    waitForFirebaseAndLoad();
     
     // Initialize charts and dashboard
     initializeCharts();
-    updateDashboardStats();
-    updateCustomerStats();
-    updateProjectStats();
     
     loadSettings();
     
@@ -96,6 +87,36 @@ document.addEventListener('DOMContentLoaded', function() {
     
     console.log('✅ Admin Dashboard Initialized');
 });
+
+// Firebase 모듈이 로드될 때까지 기다리는 함수
+async function waitForFirebaseAndLoad() {
+    console.log('⏳ Firebase 모듈 로드 대기 중...');
+    
+    // Firebase 함수가 준비될 때까지 최대 5초 대기
+    let attempts = 0;
+    const maxAttempts = 50; // 100ms * 50 = 5초
+    
+    while (!window.loadQuotesFromFirebase && attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+    }
+    
+    if (window.loadQuotesFromFirebase) {
+        console.log('✅ Firebase 모듈 로드 완료!');
+    } else {
+        console.log('⚠️ Firebase 모듈 로드 시간 초과, localStorage 사용');
+    }
+    
+    // 데이터 로드
+    await loadQuotesData();
+    loadCustomersData();
+    loadProjectsData();
+    
+    // 통계 업데이트
+    updateDashboardStats();
+    updateCustomerStats();
+    updateProjectStats();
+}
 
 function clearAllTestDataDirectly() {
     console.log('🧹 Directly clearing all test data...');
@@ -559,38 +580,92 @@ function getPackageDataForChart() {
 async function loadQuotesData() {
     console.log('📋 Loading quotes data...');
     
+    let firebaseQuotes = [];
+    let localQuotes = [];
+    
     try {
-        // Firebase에서 견적 데이터 로드 시도
+        // 1. localStorage에서 먼저 로드 (항상 백업으로 사용)
+        localQuotes = loadQuotesFromLocalStorage();
+        console.log('💾 localStorage 견적:', localQuotes.length, '개');
+        
+        // 2. Firebase에서 견적 데이터 로드 시도
         if (typeof window.loadQuotesFromFirebase === 'function') {
-            console.log('🔥 Loading quotes from Firebase...');
-            quotesData = await window.loadQuotesFromFirebase();
-            console.log('✅ Firebase에서 견적 로드 완료:', quotesData.length, '개');
-            console.log('📊 Firebase 견적 데이터:', quotesData);
-        } else {
-            console.log('⚠️ Firebase 함수를 찾을 수 없음, localStorage에서 로드...');
-            // Firebase 로드 실패 시 localStorage에서 로드
-            const savedQuotes = localStorage.getItem('quotesData');
-            console.log('🔍 Raw quotes data from localStorage:', savedQuotes);
-            
-            if (savedQuotes) {
-                quotesData = JSON.parse(savedQuotes);
-                console.log('✅ localStorage에서 견적 로드 완료:', quotesData.length, '개');
-            } else {
-                quotesData = [];
-                console.log('ℹ️ No quotes data found, initializing empty array');
+            console.log('🔥 Firebase에서 견적 로드 시도...');
+            try {
+                firebaseQuotes = await window.loadQuotesFromFirebase();
+                console.log('✅ Firebase 견적:', firebaseQuotes.length, '개');
                 
-                // 테스트용 견적 데이터 추가
-                addTestData();
+                // Firebase 실시간 감시 설정
+                if (typeof window.watchQuotesFromFirebase === 'function' && !window.firebaseWatcherActive) {
+                    window.firebaseWatcherActive = true;
+                    window.watchQuotesFromFirebase((updatedQuotes) => {
+                        console.log('🔄 Firebase 실시간 업데이트:', updatedQuotes.length, '개');
+                        // Firebase 데이터와 localStorage 데이터 병합
+                        const merged = mergeQuotes(updatedQuotes, loadQuotesFromLocalStorage());
+                        quotesData = merged;
+                        renderQuotesTable();
+                        updateDashboardStats();
+                    });
+                }
+            } catch (firebaseError) {
+                console.error('❌ Firebase 로드 오류:', firebaseError);
             }
+        } else {
+            console.log('⚠️ Firebase 함수 미사용, localStorage만 사용');
         }
+        
+        // 3. 두 소스의 데이터 병합 (중복 제거)
+        quotesData = mergeQuotes(firebaseQuotes, localQuotes);
+        console.log('📊 병합된 총 견적:', quotesData.length, '개');
         
         // 견적 테이블 렌더링
         renderQuotesTable();
         
     } catch (error) {
         console.error('❌ Error loading quotes data:', error);
-        quotesData = [];
+        quotesData = localQuotes.length > 0 ? localQuotes : [];
+        renderQuotesTable();
     }
+}
+
+// 두 소스의 견적 데이터 병합 (중복 제거)
+function mergeQuotes(firebaseQuotes, localQuotes) {
+    const allQuotes = [...firebaseQuotes];
+    const existingIds = new Set(firebaseQuotes.map(q => q.id));
+    
+    // localStorage의 견적 중 Firebase에 없는 것만 추가
+    localQuotes.forEach(localQuote => {
+        if (!existingIds.has(localQuote.id)) {
+            allQuotes.push(localQuote);
+        }
+    });
+    
+    // 테스트 데이터 제외 및 최신순 정렬
+    return allQuotes
+        .filter(q => !q.id || !q.id.toString().startsWith('test-'))
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+// localStorage에서 견적 로드
+function loadQuotesFromLocalStorage() {
+    const savedQuotes = localStorage.getItem('quotesData');
+    console.log('🔍 localStorage에서 견적 로드...');
+    
+    if (savedQuotes) {
+        try {
+            let quotes = JSON.parse(savedQuotes);
+            // 테스트 데이터 필터링 (test-로 시작하는 ID 제외)
+            quotes = quotes.filter(q => !q.id || !q.id.toString().startsWith('test-'));
+            console.log('✅ localStorage 견적 로드 완료:', quotes.length, '개');
+            return quotes;
+        } catch (parseError) {
+            console.error('❌ localStorage 데이터 파싱 오류:', parseError);
+            return [];
+        }
+    }
+    
+    console.log('ℹ️ localStorage에 저장된 견적 없음');
+    return [];
 }
 
 function addTestData() {
