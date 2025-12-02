@@ -52,19 +52,75 @@ let quotesData = [];
 let customersData = [];
 let projectsData = [];
 let settingsData = {};
+let isFirebaseReady = false;
+
+// Firebase 준비 대기
+function waitForFirebase() {
+    return new Promise((resolve) => {
+        const checkFirebase = () => {
+            if (window.firebaseAuth && window.onAdminAuthStateChanged) {
+                isFirebaseReady = true;
+                resolve();
+            } else {
+                setTimeout(checkFirebase, 100);
+            }
+        };
+        checkFirebase();
+    });
+}
 
 // Initialize Admin Dashboard
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // Initialize text cursor control
     initTextCursorControl();
     console.log('📊 Admin Dashboard DOM Loaded');
     
-    // Check authentication
-    if (!checkAdminAuth()) {
-        console.log('❌ Admin not authenticated, redirecting...');
-        window.location.href = 'index.html';
-        return;
+    // Firebase 준비 대기
+    console.log('⏳ Waiting for Firebase...');
+    await waitForFirebase();
+    console.log('✅ Firebase Ready');
+    
+    // Firebase 인증 상태 감지
+    window.onAdminAuthStateChanged((user) => {
+        if (user) {
+            console.log('✅ Admin logged in:', user.email);
+            showAdminContent(user);
+        } else {
+            console.log('❌ Admin not logged in');
+            showLoginScreen();
+        }
+    });
+    
+    // Hide loading overlay
+    setTimeout(() => {
+        document.getElementById('loadingOverlay').classList.add('hidden');
+    }, 500);
+});
+
+// 로그인 화면 표시
+function showLoginScreen() {
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('adminContent').style.display = 'none';
+}
+
+// 관리자 콘텐츠 표시
+function showAdminContent(user) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('adminContent').style.display = 'block';
+    
+    // 관리자 정보 업데이트
+    const adminNameEl = document.querySelector('.admin-name');
+    if (adminNameEl && user) {
+        adminNameEl.textContent = user.email.split('@')[0];
     }
+    
+    // 대시보드 초기화
+    initializeAdminDashboard();
+}
+
+// 관리자 대시보드 초기화
+function initializeAdminDashboard() {
+    console.log('📊 Initializing Admin Dashboard...');
     
     // 테스트 데이터 완전 삭제
     clearAllTestDataDirectly();
@@ -89,13 +145,62 @@ document.addEventListener('DOMContentLoaded', function() {
     // Setup real-time data sync
     setupRealTimeSync();
     
-    // Hide loading overlay
-    setTimeout(() => {
-        document.getElementById('loadingOverlay').classList.add('hidden');
-    }, 1000);
-    
     console.log('✅ Admin Dashboard Initialized');
-});
+}
+
+// 로그인 처리
+async function handleLogin(event) {
+    event.preventDefault();
+    
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    const loginBtn = document.getElementById('loginBtn');
+    const loginError = document.getElementById('loginError');
+    
+    // 버튼 비활성화
+    loginBtn.disabled = true;
+    loginBtn.textContent = '🔄 로그인 중...';
+    loginError.style.display = 'none';
+    
+    try {
+        const result = await window.adminLogin(email, password);
+        
+        if (result.success) {
+            console.log('✅ Login successful');
+            // 인증 상태 변경 시 자동으로 showAdminContent 호출됨
+        } else {
+            loginError.textContent = result.error;
+            loginError.style.display = 'block';
+            loginBtn.disabled = false;
+            loginBtn.textContent = '🔐 로그인';
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        loginError.textContent = '로그인 중 오류가 발생했습니다.';
+        loginError.style.display = 'block';
+        loginBtn.disabled = false;
+        loginBtn.textContent = '🔐 로그인';
+    }
+}
+
+// 로그아웃 처리
+async function logout() {
+    if (confirm('로그아웃 하시겠습니까?')) {
+        try {
+            // 차트 및 인터벌 정리
+            if (typeof cleanupOnLogout === 'function') {
+                cleanupOnLogout();
+            }
+            
+            await window.adminLogout();
+            console.log('✅ Logged out');
+            // 인증 상태 변경 시 자동으로 showLoginScreen 호출됨
+        } catch (error) {
+            console.error('Logout error:', error);
+            alert('로그아웃 중 오류가 발생했습니다.');
+        }
+    }
+}
 
 function clearAllTestDataDirectly() {
     console.log('🧹 Directly clearing all test data...');
@@ -231,21 +336,11 @@ function setupRealTimeSync() {
     console.log('✅ Real-time sync setup complete');
 }
 
-// Authentication Check
+// Authentication Check (Firebase 인증 사용)
 function checkAdminAuth() {
-    const isAuthenticated = localStorage.getItem('adminAuthenticated') === 'true';
-    const loginTime = localStorage.getItem('adminLoginTime');
-    const sessionTimeout = 30 * 60 * 1000; // 30 minutes
-    
-    if (!isAuthenticated) return false;
-    
-    if (loginTime && (Date.now() - parseInt(loginTime)) > sessionTimeout) {
-        localStorage.removeItem('adminAuthenticated');
-        localStorage.removeItem('adminLoginTime');
-        return false;
-    }
-    
-    return true;
+    // Firebase 인증은 onAdminAuthStateChanged에서 처리
+    // 이 함수는 호환성을 위해 유지
+    return window.isAdminLoggedIn ? window.isAdminLoggedIn() : false;
 }
 
 // Tab Management
@@ -2890,28 +2985,22 @@ function updateProject() {
     showNotification('프로젝트 업데이트 기능은 개발 중입니다.', 'info');
 }
 
-// Logout Function
-function logout() {
-    if (confirm('로그아웃하시겠습니까?')) {
-        // Cleanup intervals and event listeners
-        if (window.quotesSyncInterval) {
-            clearInterval(window.quotesSyncInterval);
-            window.quotesSyncInterval = null;
-        }
-        
-        // Destroy charts
-        if (quotesChart && typeof quotesChart.destroy === 'function') {
-            quotesChart.destroy();
-            quotesChart = null;
-        }
-        if (packagesChart && typeof packagesChart.destroy === 'function') {
-            packagesChart.destroy();
-            packagesChart = null;
-        }
-        
-        localStorage.removeItem('adminAuthenticated');
-        localStorage.removeItem('adminLoginTime');
-        window.location.href = 'index.html';
+// Logout Function (기존 코드 - Firebase 로그아웃은 상단 logout() 함수에서 처리)
+function cleanupOnLogout() {
+    // Cleanup intervals and event listeners
+    if (window.quotesSyncInterval) {
+        clearInterval(window.quotesSyncInterval);
+        window.quotesSyncInterval = null;
+    }
+    
+    // Destroy charts
+    if (quotesChart && typeof quotesChart.destroy === 'function') {
+        quotesChart.destroy();
+        quotesChart = null;
+    }
+    if (packagesChart && typeof packagesChart.destroy === 'function') {
+        packagesChart.destroy();
+        packagesChart = null;
     }
 }
 
